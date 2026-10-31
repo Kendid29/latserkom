@@ -35,6 +35,13 @@
         </a>
 
         <a
+            href="/SerkomSMK/satuan/index.php"
+            class="nav-link <?php echo str_contains($_SERVER['PHP_SELF'], '/satuan/') ? 'active' : '' ?>"
+        >
+            Satuan Barang
+        </a>
+
+        <a
             href="/SerkomSMK/admin/index.php"
             class="nav-link <?php echo str_contains($_SERVER['PHP_SELF'], '/admin/') ? 'active' : '' ?>"
         >

@@ -35,6 +35,18 @@
     $kondisi    = $barang['kondisi'];
     $keterangan = $barang['keterangan'] ?? '';
 
+    // Ambil daftar satuan dari database
+    $satuanQuery = mysqli_query($conn, "SELECT nama_satuan FROM satuan ORDER BY nama_satuan ASC");
+    $satuanList = [];
+    if ($satuanQuery) {
+        while ($sRow = mysqli_fetch_assoc($satuanQuery)) {
+            $satuanList[] = $sRow['nama_satuan'];
+        }
+    }
+    if (! in_array($satuan, $satuanList, true)) {
+        $satuanList[] = $satuan;
+    }
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $namaBarang  = trim($_POST['nama_barang'] ?? '');
     $jumlahInput = trim($_POST['jumlah'] ?? '');
@@ -164,9 +176,20 @@
                 </div>
 
                 <div class="col-12 col-md-6">
-                    <label for="satuan" class="form-label">
-                        Satuan <span class="text-danger">*</span>
-                    </label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label for="satuan" class="form-label mb-0">
+                            Satuan <span class="text-danger">*</span>
+                        </label>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary py-0 px-2"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalTambahSatuan"
+                            style="font-size: 12px;"
+                        >
+                            + Tambah Satuan
+                        </button>
+                    </div>
                     <select
                         name="satuan"
                         id="satuan"
@@ -174,18 +197,17 @@
                         required
                     >
                         <?php
-                            $opsiSatuan = ['pcs', 'unit', 'pack', 'box', 'dus', 'rim', 'liter', 'meter', 'kg', 'ekor', 'buah', 'set'];
-                            // Jika satuan barang saat ini belum ada di opsi bawaan, sertakan sebagai opsi
-                            if (! in_array($satuan, $opsiSatuan, true)) {
-                                $opsiSatuan[] = $satuan;
+                            // Jika satuan barang saat ini belum ada di daftar database, sertakan agar tidak hilang
+                            if (! in_array($satuan, $satuanList, true)) {
+                                array_unshift($satuanList, $satuan);
                             }
-                            foreach ($opsiSatuan as $opsi):
+                            foreach ($satuanList as $opsi):
                         ?>
                             <option
-                                value="<?php echo $opsi ?>"
+                                value="<?php echo htmlspecialchars($opsi, ENT_QUOTES, 'UTF-8') ?>"
                                 <?php echo $satuan === $opsi ? 'selected' : '' ?>
                             >
-                                <?php echo $opsi ?>
+                                <?php echo htmlspecialchars($opsi, ENT_QUOTES, 'UTF-8') ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -229,5 +251,110 @@
         </form>
     </div>
 </div>
+
+<!-- Modal Tambah Satuan Cepat -->
+<div class="modal fade" id="modalTambahSatuan" tabindex="-1" aria-labelledby="modalTambahSatuanLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="modalTambahSatuanLabel">Tambah Satuan Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="alertModalSatuan" class="alert alert-danger d-none"></div>
+                <div class="mb-3">
+                    <label for="inputSatuanBaru" class="form-label">
+                        Nama Satuan <span class="text-danger">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="inputSatuanBaru"
+                        class="form-control"
+                        placeholder="Contoh: rim, liter, botol, roll"
+                        maxlength="30"
+                    >
+                    <div class="form-text">
+                        Satuan yang disimpan akan langsung otomatis terpilih di formulir ini.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Batal</button>
+                <button type="button" id="btnSimpanSatuanCepat" class="btn btn-primary">Simpan Satuan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const btnSimpan = document.getElementById('btnSimpanSatuanCepat');
+    const inputSatuan = document.getElementById('inputSatuanBaru');
+    const alertModal = document.getElementById('alertModalSatuan');
+    const selectSatuan = document.getElementById('satuan');
+    const modalEl = document.getElementById('modalTambahSatuan');
+
+    if (btnSimpan && inputSatuan) {
+        btnSimpan.addEventListener('click', function () {
+            const nama = inputSatuan.value.trim().toLowerCase();
+            alertModal.classList.add('d-none');
+            alertModal.textContent = '';
+
+            if (!nama) {
+                alertModal.textContent = 'Nama satuan tidak boleh kosong.';
+                alertModal.classList.remove('d-none');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('action', 'tambah_ajax');
+            formData.append('nama_satuan', nama);
+
+            btnSimpan.disabled = true;
+            btnSimpan.textContent = 'Menyimpan...';
+
+            fetch('/SerkomSMK/satuan/tambah_ajax.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btnSimpan.disabled = false;
+                btnSimpan.textContent = 'Simpan Satuan';
+
+                if (data.success) {
+                    let ada = false;
+                    for (let i = 0; i < selectSatuan.options.length; i++) {
+                        if (selectSatuan.options[i].value.toLowerCase() === data.nama_satuan.toLowerCase()) {
+                            ada = true;
+                            selectSatuan.selectedIndex = i;
+                            break;
+                        }
+                    }
+                    if (!ada) {
+                        const newOption = new Option(data.nama_satuan, data.nama_satuan, true, true);
+                        selectSatuan.add(newOption);
+                    }
+
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                    inputSatuan.value = '';
+                } else {
+                    alertModal.textContent = data.message || 'Gagal menambahkan satuan.';
+                    alertModal.classList.remove('d-none');
+                }
+            })
+            .catch(err => {
+                btnSimpan.disabled = false;
+                btnSimpan.textContent = 'Simpan Satuan';
+                alertModal.textContent = 'Terjadi kesalahan sistem.';
+                alertModal.classList.remove('d-none');
+            });
+        });
+    }
+});
+</script>
 
 <?php require_once __DIR__ . '/../assets/footer.php'; ?>
