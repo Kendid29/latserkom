@@ -9,7 +9,7 @@
     $kondisiValid = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
 
     $sql = "SELECT b.id_barang, b.nama_barang, b.id_kategori,
-               b.jumlah, b.kondisi, b.keterangan,
+               b.jumlah, b.satuan, b.kondisi, b.keterangan,
                k.nama_kategori
         FROM barang b
         INNER JOIN kategori k ON k.id_kategori = b.id_kategori
@@ -173,7 +173,7 @@
                             <td>
                                 <?php echo htmlspecialchars($row['nama_kategori'], ENT_QUOTES, 'UTF-8') ?>
                             </td>
-                            <td><?php echo (int) $row['jumlah'] ?> unit</td>
+                            <td><?php echo (int) $row['jumlah'] . ' ' . htmlspecialchars($row['satuan'] ?? 'unit', ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
                                 <?php
                                     $badgeClass = match ($row['kondisi']) {

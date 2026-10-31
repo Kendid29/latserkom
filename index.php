@@ -20,6 +20,41 @@
     );
     $totalKategori = (int) mysqli_fetch_assoc($result)['total'];
 
+    // Data grafik batang: Stok per Kategori
+    $grafikKategoriQuery = mysqli_query(
+    $conn,
+    "SELECT
+            k.nama_kategori,
+            COALESCE(SUM(b.jumlah), 0) AS total_unit
+         FROM kategori k
+         LEFT JOIN barang b ON b.id_kategori = k.id_kategori
+         GROUP BY k.id_kategori, k.nama_kategori
+         ORDER BY total_unit DESC"
+    );
+    $grafikKategoriLabels = [];
+    $grafikKategoriData   = [];
+    while ($rowKat = mysqli_fetch_assoc($grafikKategoriQuery)) {
+    $grafikKategoriLabels[] = $rowKat['nama_kategori'];
+    $grafikKategoriData[]   = (int) $rowKat['total_unit'];
+    }
+
+    // Data grafik batang: Kondisi Barang
+    $grafikKondisiQuery = mysqli_query(
+    $conn,
+    "SELECT
+            COALESCE(SUM(CASE WHEN kondisi = 'Baik' THEN jumlah ELSE 0 END), 0) AS baik,
+            COALESCE(SUM(CASE WHEN kondisi = 'Rusak Ringan' THEN jumlah ELSE 0 END), 0) AS rusak_ringan,
+            COALESCE(SUM(CASE WHEN kondisi = 'Rusak Berat' THEN jumlah ELSE 0 END), 0) AS rusak_berat
+         FROM barang"
+    );
+    $kondisiData         = mysqli_fetch_assoc($grafikKondisiQuery);
+    $grafikKondisiLabels = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
+    $grafikKondisiData   = [
+    (int) $kondisiData['baik'],
+    (int) $kondisiData['rusak_ringan'],
+    (int) $kondisiData['rusak_berat'],
+    ];
+
     // Filter dan pencarian
     $cari           = trim($_GET['cari'] ?? '');
     $kategoriFilter = trim($_GET['kategori'] ?? '');
@@ -31,6 +66,7 @@
             b.id_barang,
             b.nama_barang,
             b.jumlah,
+            b.satuan,
             b.kondisi,
             b.keterangan,
             k.nama_kategori
@@ -250,12 +286,11 @@
 
 <!-- Navigasi publik, tanpa tombol login -->
 <nav class="navbar navbar-expand-lg sticky-top">
-    <div class="container py-2">
+    <div class="container py-2 d-flex justify-content-between align-items-center">
         <a
             class="navbar-brand d-flex align-items-center gap-3"
             href="index.php"
         >
-            <div class="brand-icon">▦</div>
 
             <div>
                 <div class="fw-bold">Inventaris Sekolah</div>
@@ -265,9 +300,17 @@
             </div>
         </a>
 
-        <span class="badge rounded-pill text-bg-success">
-            Data Publik
-        </span>
+        <div class="d-flex align-items-center gap-2">
+            <?php if (isset($_SESSION['id_user'])): ?>
+                <a href="/SerkomSMK/dashboard.php" class="btn btn-primary btn-sm px-3">
+                    Dashboard Admin
+                </a>
+            <?php else: ?>
+                <a href="/SerkomSMK/login.php" class="btn btn-outline-primary btn-sm px-3">
+                    Login Admin
+                </a>
+            <?php endif; ?>
+        </div>
     </div>
 </nav>
 
@@ -290,70 +333,54 @@
         </p>
     </section>
 
-    <!-- Ringkasan data -->
+    <!-- Ringkasan data: Grafik Batang -->
     <section class="mb-5">
-        <div class="row g-3">
+        <div class="row g-4">
 
-            <div class="col-12 col-sm-6 col-lg-3">
+            <!-- Grafik Stok per Kategori -->
+            <div class="col-12 col-lg-7">
                 <div class="card stat-card h-100">
                     <div class="card-body p-4">
-                        <div class="text-secondary mb-2">
-                            Jenis Barang
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div>
+                                <h2 class="section-title h5 mb-1">
+                                    Grafik Stok per Kategori
+                                </h2>
+                                <p class="text-secondary small mb-0">
+                                    Perbandingan total unit barang di setiap kategori
+                                </p>
+                            </div>
+                            <span class="badge rounded-pill text-bg-primary">
+                                <?php echo count($grafikKategoriLabels); ?> Kategori
+                            </span>
                         </div>
-                        <div class="stat-number">
-                            <?php echo (int) $ringkasan['total_jenis'] ?>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="chartKategori"></canvas>
                         </div>
-                        <small class="text-secondary">
-                            Data barang tercatat
-                        </small>
                     </div>
                 </div>
             </div>
 
-            <div class="col-12 col-sm-6 col-lg-3">
+            <!-- Grafik Kondisi Barang -->
+            <div class="col-12 col-lg-5">
                 <div class="card stat-card h-100">
                     <div class="card-body p-4">
-                        <div class="text-secondary mb-2">
-                            Total Unit
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div>
+                                <h2 class="section-title h5 mb-1">
+                                    Grafik Kondisi Barang
+                                </h2>
+                                <p class="text-secondary small mb-0">
+                                    Status kondisi fisik unit inventaris sekolah
+                                </p>
+                            </div>
+                            <span class="badge rounded-pill text-bg-success">
+                                <?php echo (int) $kondisiData['baik']; ?> Unit Baik
+                            </span>
                         </div>
-                        <div class="stat-number">
-                            <?php echo (int) $ringkasan['total_unit'] ?>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="chartKondisi"></canvas>
                         </div>
-                        <small class="text-secondary">
-                            Seluruh unit barang
-                        </small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-sm-6 col-lg-3">
-                <div class="card stat-card h-100">
-                    <div class="card-body p-4">
-                        <div class="text-secondary mb-2">
-                            Kategori
-                        </div>
-                        <div class="stat-number">
-                            <?php echo $totalKategori ?>
-                        </div>
-                        <small class="text-secondary">
-                            Kelompok inventaris
-                        </small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-sm-6 col-lg-3">
-                <div class="card stat-card h-100">
-                    <div class="card-body p-4">
-                        <div class="text-secondary mb-2">
-                            Kondisi Baik
-                        </div>
-                        <div class="stat-number">
-                            <?php echo (int) $ringkasan['kondisi_baik'] ?>
-                        </div>
-                        <small class="text-secondary">
-                            Jenis barang dalam kondisi baik
-                        </small>
                     </div>
                 </div>
             </div>
@@ -495,7 +522,7 @@
                                     </td>
 
                                     <td>
-                                        <?php echo (int) $barang['jumlah'] ?> unit
+                                        <?php echo (int) $barang['jumlah'] . ' ' . e($barang['satuan'] ?? 'unit') ?>
                                     </td>
 
                                     <td>
@@ -608,6 +635,129 @@
     </div>
 </footer>
 
+<script src="/SerkomSMK/assets/chart.umd.min.js"></script>
+<script>
+if (typeof Chart === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>');
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Grafik Batang: Stok per Kategori
+    const ctxKategori = document.getElementById('chartKategori');
+    if (ctxKategori) {
+        new Chart(ctxKategori, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($grafikKategoriLabels, JSON_UNESCAPED_UNICODE); ?>,
+                datasets: [{
+                    label: 'Total Unit',
+                    data: <?php echo json_encode($grafikKategoriData); ?>,
+                    backgroundColor: 'rgba(36, 87, 167, 0.85)',
+                    hoverBackgroundColor: '#1d427d',
+                    borderColor: '#2457a7',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    maxBarThickness: 48
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return ' ' + context.parsed.y + ' unit barang';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        grid: {
+                            color: '#eef2f7'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Grafik Batang: Kondisi Barang
+    const ctxKondisi = document.getElementById('chartKondisi');
+    if (ctxKondisi) {
+        new Chart(ctxKondisi, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($grafikKondisiLabels, JSON_UNESCAPED_UNICODE); ?>,
+                datasets: [{
+                    label: 'Total Unit',
+                    data: <?php echo json_encode($grafikKondisiData); ?>,
+                    backgroundColor: [
+                        'rgba(25, 135, 84, 0.85)',
+                        'rgba(255, 193, 7, 0.85)',
+                        'rgba(220, 53, 69, 0.85)'
+                    ],
+                    hoverBackgroundColor: [
+                        '#146c43',
+                        '#d39e00',
+                        '#b02a37'
+                    ],
+                    borderColor: [
+                        '#198754',
+                        '#ffc107',
+                        '#dc3545'
+                    ],
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    maxBarThickness: 54
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return ' ' + context.parsed.y + ' unit (' + context.label + ')';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        grid: {
+                            color: '#eef2f7'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>
 

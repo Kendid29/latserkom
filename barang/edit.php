@@ -12,7 +12,7 @@
     $stmt = mysqli_prepare(
     $conn,
     "SELECT id_barang, nama_barang, id_kategori,
-            jumlah, kondisi, keterangan
+            jumlah, satuan, kondisi, keterangan
      FROM barang
      WHERE id_barang = ?"
     );
@@ -31,14 +31,20 @@
     $error      = '';
     $namaBarang = $barang['nama_barang'];
     $jumlah     = (string) $barang['jumlah'];
+    $satuan     = $barang['satuan'] ?? 'unit';
     $kondisi    = $barang['kondisi'];
     $keterangan = $barang['keterangan'] ?? '';
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $namaBarang  = trim($_POST['nama_barang'] ?? '');
     $jumlahInput = trim($_POST['jumlah'] ?? '');
+    $satuan      = trim($_POST['satuan'] ?? 'unit');
     $kondisi     = $_POST['kondisi'] ?? '';
     $keterangan  = trim($_POST['keterangan'] ?? '');
+
+    if ($satuan === '') {
+        $satuan = 'unit';
+    }
 
     $kondisiValid = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
 
@@ -57,16 +63,17 @@
         $stmt = mysqli_prepare(
             $conn,
             "UPDATE barang
-             SET nama_barang = ?, jumlah = ?,
+             SET nama_barang = ?, jumlah = ?, satuan = ?,
                  kondisi = ?, keterangan = ?
              WHERE id_barang = ?"
         );
 
         mysqli_stmt_bind_param(
             $stmt,
-            'sisss',
+            'sissss',
             $namaBarang,
             $jumlah,
+            $satuan,
             $kondisi,
             $keterangan,
             $idBarang
@@ -139,18 +146,50 @@
                 >
             </div>
 
-            <div class="mb-3">
-                <label for="jumlah" class="form-label">Jumlah Unit</label>
-                <input
-                    type="number"
-                    name="jumlah"
-                    id="jumlah"
-                    class="form-control"
-                    min="0"
-                    max="4294967295"
-                    value="<?php echo htmlspecialchars((string) $jumlah, ENT_QUOTES, 'UTF-8') ?>"
-                    required
-                >
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-6">
+                    <label for="jumlah" class="form-label">
+                        Jumlah <span class="text-danger">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        name="jumlah"
+                        id="jumlah"
+                        class="form-control"
+                        min="0"
+                        max="4294967295"
+                        value="<?php echo htmlspecialchars((string) $jumlah, ENT_QUOTES, 'UTF-8') ?>"
+                        required
+                    >
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label for="satuan" class="form-label">
+                        Satuan <span class="text-danger">*</span>
+                    </label>
+                    <select
+                        name="satuan"
+                        id="satuan"
+                        class="form-select"
+                        required
+                    >
+                        <?php
+                            $opsiSatuan = ['pcs', 'unit', 'pack', 'box', 'dus', 'rim', 'liter', 'meter', 'kg', 'ekor', 'buah', 'set'];
+                            // Jika satuan barang saat ini belum ada di opsi bawaan, sertakan sebagai opsi
+                            if (! in_array($satuan, $opsiSatuan, true)) {
+                                $opsiSatuan[] = $satuan;
+                            }
+                            foreach ($opsiSatuan as $opsi):
+                        ?>
+                            <option
+                                value="<?php echo $opsi ?>"
+                                <?php echo $satuan === $opsi ? 'selected' : '' ?>
+                            >
+                                <?php echo $opsi ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
 
             <div class="mb-3">

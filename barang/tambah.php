@@ -6,6 +6,7 @@
     $namaBarang = '';
     $idKategori = '';
     $jumlah     = '1';
+    $satuan     = 'pcs';
     $kondisi    = 'Baik';
     $keterangan = '';
 
@@ -22,8 +23,13 @@
     $namaBarang  = trim($_POST['nama_barang'] ?? '');
     $idKategori  = trim($_POST['id_kategori'] ?? '');
     $jumlahInput = trim($_POST['jumlah'] ?? '');
+    $satuan      = trim($_POST['satuan'] ?? 'pcs');
     $kondisi     = $_POST['kondisi'] ?? 'Baik';
     $keterangan  = trim($_POST['keterangan'] ?? '');
+
+    if ($satuan === '') {
+        $satuan = 'unit';
+    }
 
     $kondisiValid = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
 
@@ -107,17 +113,18 @@
                 $conn,
                 "INSERT INTO barang
                     (id_barang, nama_barang, id_kategori,
-                     jumlah, kondisi, keterangan)
-                 VALUES (?, ?, ?, ?, ?, ?)"
+                     jumlah, satuan, kondisi, keterangan)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)"
             );
 
             mysqli_stmt_bind_param(
                 $stmt,
-                'sssiss',
+                'sssisss',
                 $idBarangBaru,
                 $namaBarang,
                 $idKategori,
                 $jumlah,
+                $satuan,
                 $kondisi,
                 $keterangan
             );
@@ -219,18 +226,46 @@
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label for="jumlah" class="form-label">Jumlah Unit</label>
-                <input
-                    type="number"
-                    name="jumlah"
-                    id="jumlah"
-                    class="form-control"
-                    min="0"
-                    max="4294967295"
-                    value="<?php echo htmlspecialchars((string) $jumlah, ENT_QUOTES, 'UTF-8') ?>"
-                    required
-                >
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-6">
+                    <label for="jumlah" class="form-label">
+                        Jumlah <span class="text-danger">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        name="jumlah"
+                        id="jumlah"
+                        class="form-control"
+                        min="0"
+                        max="4294967295"
+                        value="<?php echo htmlspecialchars((string) $jumlah, ENT_QUOTES, 'UTF-8') ?>"
+                        required
+                    >
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label for="satuan" class="form-label">
+                        Satuan <span class="text-danger">*</span>
+                    </label>
+                    <select
+                        name="satuan"
+                        id="satuan"
+                        class="form-select"
+                        required
+                    >
+                        <?php
+                            $opsiSatuan = ['pcs', 'unit', 'pack', 'box', 'dus', 'rim', 'liter', 'meter', 'kg', 'ekor', 'buah', 'set'];
+                            foreach ($opsiSatuan as $opsi):
+                        ?>
+                            <option
+                                value="<?php echo $opsi ?>"
+                                <?php echo $satuan === $opsi ? 'selected' : '' ?>
+                            >
+                                <?php echo $opsi ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
 
             <div class="mb-3">
