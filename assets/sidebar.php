@@ -17,24 +17,29 @@
             href="/SerkomSMK/dashboard.php"
             class="nav-link <?php echo $currentPage === 'dashboard.php' ? 'active' : '' ?>"
         >
-            <span class="menu-icon">▦</span> Dashboard
+            Dashboard
         </a>
 
         <a
             href="/SerkomSMK/kategori/index.php"
             class="nav-link <?php echo str_contains($_SERVER['PHP_SELF'], '/kategori/') ? 'active' : '' ?>"
         >
-            <span class="menu-icon">▤</span> Kategori
+            Kategori
         </a>
 
         <a
             href="/SerkomSMK/barang/index.php"
             class="nav-link <?php echo str_contains($_SERVER['PHP_SELF'], '/barang/') ? 'active' : '' ?>"
         >
-            <span class="menu-icon">▣</span> Data Barang
+            Data Barang
         </a>
 
-
+        <a
+            href="/SerkomSMK/admin/index.php"
+            class="nav-link <?php echo str_contains($_SERVER['PHP_SELF'], '/admin/') ? 'active' : '' ?>"
+        >
+            Kelola Admin
+        </a>
     </nav>
 
     <div class="sidebar-bottom">

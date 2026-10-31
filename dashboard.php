@@ -20,6 +20,12 @@
     );
     $totalStok = (int) mysqli_fetch_assoc($resultStok)['total'];
 
+    $resultAdmin = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total FROM users"
+    );
+    $totalAdmin = (int) mysqli_fetch_assoc($resultAdmin)['total'];
+
     $resultKondisi = mysqli_query(
     $conn,
     "SELECT kondisi, COUNT(*) AS total
@@ -50,7 +56,7 @@
 
 <div class="row g-4 mb-4">
 
-    <div class="col-12 col-sm-6 col-xl-4">
+    <div class="col-12 col-sm-6 col-xl-3">
         <div class="card summary-card h-100">
             <div class="card-body p-4">
                 <div class="text-secondary mb-2">Jenis Barang</div>
@@ -62,7 +68,7 @@
         </div>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-4">
+    <div class="col-12 col-sm-6 col-xl-3">
         <div class="card summary-card h-100">
             <div class="card-body p-4">
                 <div class="text-secondary mb-2">Total Kategori</div>
@@ -74,13 +80,25 @@
         </div>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-4">
+    <div class="col-12 col-sm-6 col-xl-3">
         <div class="card summary-card h-100">
             <div class="card-body p-4">
                 <div class="text-secondary mb-2">Total Unit</div>
                 <h2 class="fw-bold mb-2"><?php echo $totalStok ?></h2>
                 <small class="text-secondary">
                     Jumlah seluruh barang
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card summary-card h-100">
+            <div class="card-body p-4">
+                <div class="text-secondary mb-2">Total Admin</div>
+                <h2 class="fw-bold mb-2"><?php echo $totalAdmin ?></h2>
+                <small class="text-secondary">
+                    Pengelola sistem
                 </small>
             </div>
         </div>
@@ -137,8 +155,8 @@
         <h5 class="fw-bold mb-2">Selamat Datang!</h5>
         <p class="text-secondary mb-3">
             Kelola data inventaris sekolah melalui menu di samping.
-            Kamu dapat menambahkan kategori dan mencatat barang
-            beserta jumlah serta kondisinya.
+            Kamu dapat menambahkan kategori, mencatat barang,
+            serta mengelola akun admin.
         </p>
 
         <div class="d-flex flex-wrap gap-2">
@@ -150,6 +168,16 @@
             <a href="/SerkomSMK/kategori/index.php"
                class="btn btn-outline-primary">
                 Kelola Kategori
+            </a>
+
+            <a href="/SerkomSMK/admin/index.php"
+               class="btn btn-outline-secondary">
+                Kelola Admin
+            </a>
+
+            <a href="/SerkomSMK/index.php"
+               class="btn btn-outline-dark">
+                Lihat Halaman Publik
             </a>
         </div>
     </div>
